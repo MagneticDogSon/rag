@@ -1,0 +1,132 @@
+import pickle
+import os
+
+import streamlit as st
+from streamlit_extras.add_vertical_space import add_vertical_space
+from PyPDF2 import PdfFileReader, PdfFileWriter, PdfReader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.embeddings import SentenceTransformerEmbeddings
+from langchain.vectorstores import FAISS
+from langchain_community.llms import LlamaCpp
+from langchain.chains.question_answering import load_qa_chain
+from langchain.callbacks import get_openai_callback
+
+############################################################
+
+st.set_page_config(page_title=" RAG Demo")
+
+###############################
+
+
+with st.sidebar:
+    st.title('Загрузка документа')
+
+    uploaded_file = st.file_uploader('', type='pdf')
+    if uploaded_file:
+
+        path = os.path.join('Doc/', uploaded_file.name)
+        with open(path, "wb") as f:
+            f.write(uploaded_file.getvalue())
+
+
+    # with st.spinner ('Подождите...'):
+    #    time.sleep (100)
+    # st.success('Загружено!')
+
+    st.divider()
+    st.title('Настройки')
+
+    st.title('Векторная база')
+
+    chunk_size = st.slider('Размер фрагментов', 0, 1000, 500)
+    chunk_overlap = st.slider('Пересечение', 0, 500, 50)
+
+    fragments_size = st.slider('Кол-во фрагментов для контекста', 0, 10, 3)
+    st.divider()
+    st.title('Модель')
+
+    top_p = st.slider('Top-p', 0.0, 1.0, 0.4)
+    top_k = st.slider('Top-k', 0, 100, 10)
+    temp = st.slider('Temp', 0.0, 1.0, 0.1)
+    st.divider()
+
+###############################################
+
+llm = LlamaCpp(model_path="model/model-q4_K.gguf",
+        temperature = temp,
+        top_p=top_p,
+        top_k=top_k,
+
+        streaming =True,
+        n_gpu_layers=100,
+        n_batch=8,
+        n_ctx=2000,
+        n_parts=1,
+        verbose=True
+                    )
+
+
+def main():
+    st.title("📄RAG Demo")
+    st.header("Чат с Вашим PDF документом")
+
+    # upload a your pdf file
+    pdf = st.file_uploader("Загрузите свой файл", type='pdf')
+    st.write("----------")
+
+    if pdf is not None:
+        pdf_reader = PdfReader(pdf)
+
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text()
+
+        # langchain_textspliter
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=500,
+            chunk_overlap=100,
+            length_function=len
+        )
+
+        chunks = text_splitter.split_text(text=text)
+
+        # store pdf name
+        store_name = pdf.name[:-4]
+
+        if os.path.exists(f"{store_name}.pkl"):
+            with open(f"{store_name}.pkl", "rb") as f:
+                vectorstore = pickle.load(f)
+            # st.write("Already, Embeddings loaded from the your folder (disks)")
+        else:
+
+            embeddings = SentenceTransformerEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-mpnet-base-v2")
+
+            # Store the chunks part in db (vector)
+            vectorstore = FAISS.from_texts(chunks,  embedding=embeddings)
+
+            with open(f"{store_name}.pkl", "wb") as f:
+                pickle.dump(vectorstore, f)
+
+
+
+        query = st.chat_input("Задай вопрос загруженному файлу")
+        # st.write(query)
+
+        if query:
+            docs = vectorstore.similarity_search(query=query, k=2)
+
+            chain = load_qa_chain(llm=llm, chain_type="stuff")
+
+            with get_openai_callback() as cb:
+                response = chain.run(input_documents=docs, question=query)
+                print(cb)
+            st.write(response)
+
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+
