@@ -11,22 +11,43 @@ from langchain_community.llms import LlamaCpp
 from langchain.chains.question_answering import load_qa_chain
 from langchain.callbacks import get_openai_callback
 
+from langchain.chains import RetrievalQA
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 ############################################################
 
 st.set_page_config(page_title=" RAG Demo")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ###############################
 
 
 with st.sidebar:
-    st.title('Загрузка документа')
+    #st.title('Загрузка документа')
 
-    uploaded_file = st.file_uploader('', type='pdf')
-    if uploaded_file:
+    #uploaded_file = st.file_uploader('', type='pdf')
+    #if uploaded_file:
 
-        path = os.path.join('Doc/', uploaded_file.name)
-        with open(path, "wb") as f:
-            f.write(uploaded_file.getvalue())
+       #path = os.path.join('Doc/', uploaded_file.name)
+        #with open(path, "wb") as f:
+            #f.write(uploaded_file.getvalue())
 
 
     # with st.spinner ('Подождите...'):
@@ -113,12 +134,12 @@ def main():
         # st.write(query)
 
         if query:
-            docs = vectorstore.similarity_search(query=query, k=2)
+            doc = vectorstore.similarity_search(query=query, k=fragments_size)
 
-            chain = load_qa_chain(llm=llm, chain_type="stuff")
+            qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=vectorstore.as_retriever() )
 
             with get_openai_callback() as cb:
-                response = chain.run(input_documents=docs, question=query)
+                response = qa.run(input_documents=doc, question=query)
                 print(cb)
             st.write(response)
 
