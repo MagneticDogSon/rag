@@ -17,22 +17,21 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 st.set_page_config(page_title=" RAG Demo")
 
+prompt =  """
+Use the following pieces of context to answer the user question. This context retrieved from a knowledge base and you should use only the facts from the context to answer.
+Your answer must be based on the context. If the context not contain the answer, just say that 'I don't know', don't try to make up an answer, use the context.
 
 
 
+Context: {context}
+Question: {question}
 
+Don't address the context directly, but use it to answer the user question like it's your own knowledge.
+Answer in short, use up to 10 words.
 
+    """
 
-
-
-
-
-
-
-
-
-
-
+prompt = PromptTemplate(template=prompt_template, input_variables=["question", "context"])
 
 
 
@@ -131,12 +130,17 @@ def main():
 
 
         query = st.chat_input("Задай вопрос загруженному файлу")
-        # st.write(query)
+      
 
         if query:
             doc = vectorstore.similarity_search(query=query, k=fragments_size)
 
-            qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=vectorstore.as_retriever() )
+            qa = RetrievalQA.from_chain_type(
+                llm=llm, 
+                chain_type="stuff",
+                retriever=vectorstore.as_retriever(),
+                chain_type_kwargs={"prompt": prompt},
+                verbose=True )
 
             with get_openai_callback() as cb:
                 response = qa.run(input_documents=doc, question=query)
