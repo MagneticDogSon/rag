@@ -5,9 +5,17 @@ from langchain.document_loaders import DirectoryLoader
 from langchain.document_loaders import PyPDFLoader
 from langchain.vectorstores import Chroma
 from langchain.text_splitter import MarkdownTextSplitter
+############
+import yaml
 
-chunk_size = int(700)
-chunk_overlap = int(100)
+with open ("conf.yaml", "r") as f:
+    conf = yaml.safe_load(f)
+    f.close()
+
+chunk_size = int(conf["chunk_size"])
+chunk_overlap = int(conf["chunk_overlap"])
+
+################################
 
 embeddings = SentenceTransformerEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-mpnet-base-v2")
 
