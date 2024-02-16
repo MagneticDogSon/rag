@@ -1,2 +1,5 @@
 chunk_overlap: 50
 chunk_size: 500
+top_p: 0.5
+top_k: 30
+temp: 0
