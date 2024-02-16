@@ -21,13 +21,16 @@ from langchain.vectorstores import Chroma
 from langchain.text_splitter import MarkdownTextSplitter
 
 #######################################################
+import yaml
 
-top_p = ()
-top_k = ()
-temp = ()
-chunk_size = ()
-chunk_overlap = ()
+with open ("conf.yaml", "r") as f:
+    conf = yaml.safe_load(f)
+    f.close()
 
+top_p = int(conf["top_p"])
+top_k = int(conf["top_k"])
+temp = int(conf["temp"])
+fragments_size = int(conf["fragments_size"])
 ######################################################
 
 def llm():
@@ -48,7 +51,7 @@ def llm():
 
     load_vector_store = Chroma(persist_directory="stores/db", embedding_function=embeddings)
 
-    retriever = load_vector_store.as_retriever(search_kwargs={"k":2})
+    retriever = load_vector_store.as_retriever(search_kwargs={"k":fragments_size})
 
 
     llm = LlamaCpp(model_path=".model/model-q4_K.gguf",
