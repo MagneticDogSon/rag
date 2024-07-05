@@ -1,0 +1,6 @@
+chunk_overlap: 50
+chunk_size: 300
+fragments_size: 3
+temp: 0.0
+top_k: 1
+top_p: 0.1
