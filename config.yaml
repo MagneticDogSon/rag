@@ -1,10 +1,11 @@
 chunk_overlap: 50
-chunk_size: 300
+chunk_size: 500
 collection_name: None
 embeding: BAAI/bge-m3
 fetch_k: 20
 k: 3
 lambda_mult: 0.5
+model: llama3.1:latest
 path_files: None
 score_threshold: 0.4
 search: similarity
